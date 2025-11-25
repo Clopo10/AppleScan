@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['apple_green', 'apple_red']
+
+roboflow:
+  workspace: clopo
+  project: applescan-8hdaw
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/clopo/applescan-8hdaw/dataset/2
