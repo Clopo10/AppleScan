@@ -30,7 +30,6 @@ def generate_frames():
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
 
-        # --- AICI SE INTAMPLA MAGIA AI ---
         # Run YOLOv8 inference on the frame
         results = model(frame)
 

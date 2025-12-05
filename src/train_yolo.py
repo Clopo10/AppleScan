@@ -25,7 +25,7 @@ def train_model():
     # 4. Start Antrenare
     results = model.train(
         data=yaml_path, 
-        epochs=100,        # 100 de epoci e ok pentru setul tau
+        epochs=100,        # 100 de epoci
         imgsz=640,         # Mărimea standard
         plots=True,        # Generează grafice
         name='mar_model',  # Numele folderului unde se salvează rezultatul
