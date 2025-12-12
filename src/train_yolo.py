@@ -8,7 +8,7 @@ def train_model():
     
     # 2. Definim calea EXACTA către data.yaml
     # ATENȚIE: Aici am adăugat folderul 'AppleScan.yolov8' conform pozei tale
-    yaml_path = os.path.join(base_dir, 'data', 'AppleScan.yolov8', 'data.yaml')
+    yaml_path = os.path.join(base_dir, 'data', 'generated', 'AppleScan.yolov8', 'data.yaml')
 
     # Verificare de siguranță: vedem dacă fișierul există înainte să pornim
     if not os.path.exists(yaml_path):
