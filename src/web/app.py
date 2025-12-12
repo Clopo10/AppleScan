@@ -8,7 +8,7 @@ app = Flask(__name__)
 # --- CONFIGURARE ---
 # Căile trebuie să fie corecte relativ la locul de unde rulăm scriptul
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_PATH = os.path.join(BASE_DIR, 'data', 'models', 'mar_model', 'weights', 'best.pt')
+MODEL_PATH = os.path.join(BASE_DIR, 'models', 'mar_model', 'weights', 'best.pt')
 VIDEO_PATH = os.path.join(BASE_DIR, 'data', 'video', 'mere3.mp4') 
 # -------------------
 

@@ -29,7 +29,7 @@ def train_model():
         imgsz=640,         # Mărimea standard
         plots=True,        # Generează grafice
         name='mar_model',  # Numele folderului unde se salvează rezultatul
-        project='data/models' # Salvăm modelele antrenate organizat
+        project='models'   # Salvăm modelele antrenate organizat în folderul models/
     )
 
     print("[GATA] Antrenare completa!")

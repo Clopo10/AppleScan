@@ -1,0 +1,14 @@
+{
+    "test_metrics": {
+        "mAP50": 0.995,
+        "mAP50-95": 0.9286281893792957,
+        "precision": 0.9934399111833048,
+        "recall": 1.0,
+        "f1_score": 0.996709161495216
+    },
+    "model_info": {
+        "model_path": "C:\\Users\\Clopo\\Desktop\\AppleScan\\data\\models\\mar_model\\weights\\best.pt",
+        "data_config": "C:\\Users\\Clopo\\Desktop\\AppleScan\\data\\generated\\AppleScan.yolov8\\data.yaml",
+        "evaluation_date": "12.12.2025"
+    }
+}
