@@ -5,33 +5,239 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AppleScan Dashboard</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
         font-family: sans-serif;
-        background-color: #f4f4f9;
-        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100vh;
       }
       h1 {
-        color: #333;
+        color: #ffffff;
+        margin: 10px 0;
+        text-align: center;
+        font-size: 24px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
-      .container {
-        margin-top: 20px;
+      .main-container {
+        display: flex;
+        gap: 40px;
+        height: calc(100vh - 50px);
+        padding: 0 40px 20px 60px;
+        align-items: center;
+      }
+      .left-panel {
+        flex: 0 0 350px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        overflow-y: auto;
+      }
+      .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        overflow: hidden;
+        padding-left: 20px;
+      }
+      .controls {
+        width: 100%;
+      }
+      .video-selector {
+        margin: 10px 0;
+        text-align: center;
+      }
+      .video-selector label {
+        font-weight: bold;
+        margin-right: 10px;
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .video-selector select {
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 5px;
+        border: 2px solid #333;
+        background-color: white;
+        cursor: pointer;
+        width: 100%;
+      }
+      .stats-container {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        width: 100%;
+      }
+      .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        width: 100%;
+      }
+      .stat-box.green {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+      }
+      .stat-box.red {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      }
+      .stat-box h3 {
+        margin: 0 0 12px 0;
+        font-size: 20px;
+      }
+      .stat-box .number {
+        font-size: 56px;
+        font-weight: bold;
+        margin: 0;
+      }
+      .video-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .video-box {
         border: 5px solid #333;
         border-radius: 10px;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-        max-width: 80%;
+        max-width: 900px;
+        max-height: 85vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+      .status {
+        margin: 8px 0;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
       }
     </style>
   </head>
   <body>
     <h1>🍎 AppleScan - Monitorizare Timp Real</h1>
-    <div class="container">
-      <img
-        src="{{ url_for('video_feed') }}"
-        class="video-box"
-        alt="Video Stream"
-      />
+    
+    <div class="main-container">
+      <!-- Left Panel: Controls and Statistics -->
+      <div class="left-panel">
+        <div class="controls">
+          <div class="video-selector">
+            <label for="videoSelect">Selectează Video:</label>
+            <select id="videoSelect" onchange="changeVideo()">
+              {% for video in videos %}
+                <option value="{{ video }}" {% if video == current_video %}selected{% endif %}>
+                  {{ video }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="status">
+            <span id="statusText">Video activ: {{ current_video }}</span>
+          </div>
+        </div>
+        
+        <div class="stats-container">
+          <div class="stat-box">
+            <h3>📊 Total Mere</h3>
+            <p class="number" id="totalApples">0</p>
+          </div>
+          <div class="stat-box green">
+            <h3>🟢 Mere Verzi</h3>
+            <p class="number" id="greenApples">0</p>
+          </div>
+          <div class="stat-box red">
+            <h3>🔴 Mere Roșii</h3>
+            <p class="number" id="redApples">0</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel: Video Stream -->
+      <div class="right-panel">
+        <div class="video-container">
+          <img
+            src="{{ url_for('video_feed') }}"
+            class="video-box"
+            alt="Video Stream"
+            id="videoStream"
+          />
+        </div>
+      </div>
     </div>
+
+    <script>
+      let statsInterval;
+      
+      function updateStats() {
+        fetch('/stats')
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById('totalApples').textContent = data.total_apples;
+            document.getElementById('greenApples').textContent = data.green_apples;
+            document.getElementById('redApples').textContent = data.red_apples;
+          })
+          .catch(error => console.error('Error fetching stats:', error));
+      }
+
+      // Change video selection
+      function changeVideo() {
+        const select = document.getElementById('videoSelect');
+        const selectedVideo = select.value;
+        
+        // Stop stats updates temporarily
+        if (statsInterval) {
+          clearInterval(statsInterval);
+        }
+        
+        // Reset statistics display immediately
+        document.getElementById('totalApples').textContent = '0';
+        document.getElementById('greenApples').textContent = '0';
+        document.getElementById('redApples').textContent = '0';
+        
+        // Force disconnect old video stream
+        const videoStream = document.getElementById('videoStream');
+        videoStream.src = '';
+        
+        fetch('/select_video', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ video: selectedVideo })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('statusText').textContent = 'Video activ: ' + data.video;
+            
+            // Wait a moment for old generator to stop, then reload video stream
+            setTimeout(() => {
+              videoStream.src = "{{ url_for('video_feed') }}" + "?t=" + new Date().getTime();
+              
+              // Keep stats at 0 for a bit, then restart updates
+              setTimeout(() => {
+                updateStats();
+                statsInterval = setInterval(updateStats, 500);
+              }, 300);
+            }, 200);
+          }
+        })
+        .catch(error => console.error('Error changing video:', error));
+      }
+
+      // Start updating statistics
+      statsInterval = setInterval(updateStats, 500);
+      updateStats(); // Initial update
+    </script>
   </body>
 </html>
