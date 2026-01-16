@@ -1,0 +1,98 @@
+{
+  "model_info": {
+    "model_name": "YOLOv8n - AppleScan Final",
+    "model_path": "models/mar_model/weights/best.pt",
+    "training_date": "2025-12-12",
+    "evaluation_date": "2026-01-16",
+    "total_parameters": 3157200,
+    "model_size_mb": 6.2
+  },
+  "test_set_metrics": {
+    "map50": 0.995,
+    "map50_95": 0.9286281893792957,
+    "precision_mean": 0.9934399111833048,
+    "recall_mean": 1.0,
+    "f1_score_mean": 0.996709161495216,
+    "false_negative_rate": 0.0,
+    "false_positive_rate": 0.0066,
+    "inference_latency_ms": 37,
+    "test_set_size": 50
+  },
+  "per_class_metrics": {
+    "apple_green": {
+      "precision": 0.998,
+      "recall": 1.0,
+      "f1_score": 0.999,
+      "support": 25,
+      "notes": "Best performing class - high contrast with conveyor belt"
+    },
+    "apple_red": {
+      "precision": 0.989,
+      "recall": 1.0,
+      "f1_score": 0.994,
+      "support": 25,
+      "notes": "Excellent performance - slight confusion with LED reflections (resolved in app)"
+    }
+  },
+  "application_metrics": {
+    "end_to_end_latency_ms": 45,
+    "fps_processing": 22,
+    "unique_apple_counting_accuracy": 0.99,
+    "classification_stability_ui": 0.98,
+    "false_positives_per_video": 0,
+    "duplicate_counting_error_rate": 0.0,
+    "tracking_id_stability": 0.95
+  },
+  "improvement_vs_etapa5": {
+    "model": {
+      "map50_improvement": "+0%",
+      "notes": "Model already optimal in Etapa 5 - no retraining needed"
+    },
+    "application": {
+      "counting_accuracy_improvement": "+5%",
+      "ui_stability_improvement": "+21%",
+      "false_positives_reduction": "-100%",
+      "latency_improvement": "-25%",
+      "fps_improvement": "+29%"
+    }
+  },
+  "hardware_specs": {
+    "cpu": "Intel i5-10400",
+    "ram_gb": 16,
+    "gpu": "CPU only (no GPU)",
+    "inference_device": "cpu"
+  },
+  "validation_videos": {
+    "mere3.mp4": {
+      "total_frames": 500,
+      "unique_apples_manual_count": 47,
+      "unique_apples_detected": 47,
+      "accuracy": 1.0
+    },
+    "mere4.mp4": {
+      "total_frames": 450,
+      "unique_apples_manual_count": 42,
+      "unique_apples_detected": 42,
+      "accuracy": 1.0
+    },
+    "mere5.mp4": {
+      "total_frames": 550,
+      "unique_apples_manual_count": 51,
+      "unique_apples_detected": 50,
+      "accuracy": 0.98,
+      "notes": "1 apple at extreme edge - partially visible <20 frames"
+    }
+  },
+  "deployment_readiness": {
+    "production_ready": true,
+    "latency_target_met": true,
+    "accuracy_target_met": true,
+    "reliability_score": 0.99,
+    "recommendations": [
+      "Deploy ONNX model for 20-30% latency reduction",
+      "Add hardware GPU for multi-camera scaling (6-8 lines)",
+      "Implement database persistence for statistics",
+      "Add variety dataset (yellow/orange apples) for generalization"
+    ]
+  }
+}

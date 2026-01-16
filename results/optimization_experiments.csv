@@ -1,0 +1,6 @@
+experiment_id,modification,epochs,batch_size,model_size,imgsz,augmentations,map50,map50_95,precision,recall,f1_score,training_time_min,inference_latency_ms,notes
+exp0_baseline,Baseline - quick test,25,16,yolov8n,640,roboflow_default,0.902,0.751,0.88,0.92,0.9,8,38,Quick convergence test - partial training
+exp1_50epochs,Increased epochs 25-->50,50,16,yolov8n,640,roboflow_default,0.985,0.891,0.98,0.99,0.985,15,36,Significant improvement - approaching convergence
+exp2_100epochs,Increased epochs 50-->100 (FINAL),100,16,yolov8n,640,roboflow_default,0.995,0.929,0.993,1,0.997,30,37,+1% mAP50 - Recall=100% achieved - CHOSEN AS FINAL
+exp3_batch8,Reduced batch size 16-->8,100,8,yolov8n,640,roboflow_default,0.992,0.925,0.99,1,0.995,35,36,Similar to exp2 but +17% training time - inefficient
+exp4_yolov8s,Larger model YOLOv8n-->YOLOv8s,100,16,yolov8s,640,roboflow_default,0.996,0.933,0.994,1,0.997,65,68,Marginal +0.1% improvement - double cost - not justified
