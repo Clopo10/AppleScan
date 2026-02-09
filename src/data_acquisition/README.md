@@ -13,21 +13,18 @@ Acest modul gestionează achiziția datelor pentru proiectul AppleScan - un sist
 ### Proces de Achiziție
 
 1. **Înregistrare Video**:
-
    - Am creat o simulare de bandă transportoare
    - Am filmat un flux video continuu cu mere roșii și verzi
    - Condiții: iluminare artificială, fundal neutru (similar unei benzi industriale)
    - Durata: multiple sesiuni de înregistrare pentru varietate
 
 2. **Extragere Cadre**:
-
    - Script: `src/extract_frames.py`
    - Metoda: Extragere selectivă (nu toate cadrele consecutive)
    - Sampling: La fiecare 5-10 cadre pentru a evita redundanța
-   - Rezultat: ~79 imagini de bază unice
+   - Rezultat: 33 imagini de bază unice
 
 3. **Etichetare Manuală**:
-
    - Platformă: Roboflow
    - Clase definite: `apple_green`, `apple_red`
    - Bounding boxes desenate manual pe fiecare măr
@@ -37,7 +34,7 @@ Acest modul gestionează achiziția datelor pentru proiectul AppleScan - un sist
    - Rotații: ±15 grade
    - Ajustări luminozitate/contrast: ±20%
    - Adăugare zgomot: simulare "pureci" pe cameră
-   - Rezultat final: ~1500 imagini (79 originale × augmentări)
+   - Rezultat final: 79 imagini (33 originale × augmentări)
 
 ## Parametri Folosiți
 
@@ -150,19 +147,19 @@ python src/extract_frames.py --video data/video/mere3.mp4 \
 
 ## Statistici Dataset Final
 
-| **Metrică**            | **Valoare**                     |
-| ---------------------- | ------------------------------- |
-| **Total imagini**      | ~1500                           |
-| **Imagini originale**  | 79 (100% proprii)               |
-| **Clase**              | 2 (apple_green, apple_red)      |
-| **Obiecte etichetate** | ~3000 mere (avg 2 mere/imagine) |
-| **Rezoluție finală**   | 640×640 (YOLO standard)         |
+| **Metrică**            | **Valoare**                    |
+| ---------------------- | ------------------------------ |
+| **Total imagini**      | 79                             |
+| **Imagini originale**  | 79 (100% proprii)              |
+| **Clase**              | 2 (apple_green, apple_red)     |
+| **Obiecte etichetate** | ~250 mere (avg 2 mere/imagine) |
+| **Rezoluție finală**   | 640×640 (YOLO standard)        |
 
 ## Validare Calitate Date
 
 ✅ **Verificări efectuate**:
 
-- [ ] Bounding boxes acoperă complet merele (nu trunchiate)
+- [x] Bounding boxes acoperă complet merele (nu trunchiate)
 - [x] Clase corecte (roșu vs verde consistent)
 - [x] Imagini clare (fără blur excesiv)
 - [x] Distribuție echilibrată apple_green/apple_red

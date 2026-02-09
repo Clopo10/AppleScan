@@ -5,9 +5,20 @@ import os
 import glob
 import numpy as np
 from collections import defaultdict
+from enum import Enum, auto
 import threading
 
 app = Flask(__name__)
+
+
+class StreamState(Enum):
+    IDLE = auto()
+    ACQUIRE_DATA = auto()
+    PREPROCESS = auto()
+    INFERENCE = auto()
+    DECISION = auto()
+    OUTPUT = auto()
+    ERROR = auto()
 
 # Global variables for video selection
 current_video = 'mere3.mp4'
@@ -39,7 +50,7 @@ MIN_AREA_FOR_TRACKING = 1000  # Minimum area to consider valid detection
 # --- CONFIGURARE ---
 # Căile trebuie să fie corecte relativ la locul de unde rulăm scriptul
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_PATH = os.path.join(BASE_DIR, 'models', 'mar_model', 'weights', 'best.pt')
+MODEL_PATH = os.path.join(BASE_DIR, 'models', 'mar_model_nou', 'weights', 'best.pt')
 VIDEO_DIR = os.path.join(BASE_DIR, 'data', 'video')
 # -------------------
 
@@ -116,6 +127,10 @@ def generate_frames():
         return
     
     frame_num = 0
+    state = StreamState.ACQUIRE_DATA
+    frame = None
+    results = None
+    annotated_frame = None
 
     while True:
         # Check if this generator should stop (video changed)
@@ -124,223 +139,220 @@ def generate_frames():
                 print(f"[INFO] Generator stopped - video changed (session {my_session_id} -> {video_session_id})")
                 cap.release()
                 break
-        
-        success, frame = cap.read()
-        if not success:
-            # Video s-a terminat
-            print(f"[INFO] Video terminat (session {my_session_id}).")
-            print(f"[INFO] Total mere verzi unice: {len(all_unique_ids['green'])}")
-            print(f"[INFO] Total mere roșii unice: {len(all_unique_ids['red'])}")
-            print(f"[INFO] Total mere: {len(all_unique_ids['green']) + len(all_unique_ids['red'])}")
+        try:
+            if state == StreamState.ACQUIRE_DATA:
+                success, frame = cap.read()
+                if not success:
+                    print(f"[INFO] Video terminat (session {my_session_id}).")
+                    print(f"[INFO] Total mere verzi unice: {len(all_unique_ids['green'])}")
+                    print(f"[INFO] Total mere roșii unice: {len(all_unique_ids['red'])}")
+                    print(f"[INFO] Total mere: {len(all_unique_ids['green']) + len(all_unique_ids['red'])}")
+                    cap.release()
+                    break
+
+                frame_num += 1
+                state = StreamState.PREPROCESS
+
+            if state == StreamState.PREPROCESS:
+                state = StreamState.INFERENCE
+
+            if state == StreamState.INFERENCE:
+                results = model(frame)
+                state = StreamState.DECISION
+
+            if state == StreamState.DECISION:
+                current_detections = []
+                detections = results[0].boxes
+
+                if detections is not None and len(detections) > 0:
+                    for box in detections:
+                        class_id = int(box.cls[0])
+                        confidence = float(box.conf[0])
+                        cx, cy, area = calculate_centroid(box)
+
+                        if area >= MIN_AREA_FOR_TRACKING:
+                            current_detections.append({
+                                'centroid': (cx, cy),
+                                'area': area,
+                                'class': class_id,
+                                'confidence': confidence
+                            })
+
+                matched_track_ids = set()
+
+                for detection in current_detections:
+                    centroid = detection['centroid']
+                    area = detection['area']
+                    class_id = detection['class']
+                    confidence = detection['confidence']
+
+                    track_id = find_matching_track(centroid, class_id, confidence, frame_num, active_tracks)
+
+                    if track_id is not None:
+                        track = active_tracks[track_id]
+                        track['centroid'] = centroid
+                        track['last_seen'] = frame_num
+                        track['max_area'] = max(track.get('max_area', 0), area)
+
+                        if 'class_history' not in track:
+                            track['class_history'] = []
+                            track['confidence_history'] = []
+                            track['area_history'] = []
+                            track['first_seen'] = frame_num
+                            track['is_locked'] = False
+
+                        track['class_history'].append(class_id)
+                        track['confidence_history'].append(confidence)
+                        track['area_history'].append(area)
+
+                        if len(track['class_history']) > 10:
+                            track['class_history'] = track['class_history'][-10:]
+                            track['confidence_history'] = track['confidence_history'][-10:]
+                            track['area_history'] = track['area_history'][-10:]
+
+                        is_locked = track.get('is_locked', False)
+                        old_class = track.get('final_class')
+                        frames_tracked = len(track['class_history'])
+                        frames_since_first = frame_num - track.get('first_seen', frame_num)
+
+                        if not is_locked:
+                            required_frames = 5
+
+                            if len(track['class_history']) >= required_frames:
+                                best_class = get_best_classification(
+                                    track['class_history'],
+                                    track['confidence_history'],
+                                    track['area_history']
+                                )
+
+                                max_confidence = max(track['confidence_history'])
+
+                                if max_confidence >= MIN_CONFIDENCE_FOR_CLASSIFICATION:
+                                    if old_class != best_class:
+                                        if old_class is not None:
+                                            if frames_since_first <= MAX_RECLASSIFY_FRAME:
+                                                print(
+                                                    f"[INFO] Reclassifying apple {track_id}: {old_class} -> {best_class} (frames: {frames_tracked})"
+                                                )
+                                                old_class_name = 'green' if old_class == 0 else 'red'
+                                                new_class_name = 'green' if best_class == 0 else 'red'
+
+                                                all_unique_ids[old_class_name].discard(track_id)
+                                                all_unique_ids[new_class_name].add(track_id)
+
+                                                track['final_class'] = best_class
+                                                track['class'] = best_class
+                                        else:
+                                            class_name = 'green' if best_class == 0 else 'red'
+                                            all_unique_ids[class_name].add(track_id)
+                                            track['final_class'] = best_class
+                                            track['class'] = best_class
+
+                                    if frames_since_first > MAX_RECLASSIFY_FRAME:
+                                        track['is_locked'] = True
+
+                        matched_track_ids.add(track_id)
+                    else:
+                        new_id = session['next_apple_id']
+                        session['next_apple_id'] += 1
+
+                        active_tracks[new_id] = {
+                            'centroid': centroid,
+                            'class': class_id,
+                            'final_class': None,
+                            'is_locked': False,
+                            'first_seen': frame_num,
+                            'last_seen': frame_num,
+                            'max_area': area,
+                            'class_history': [class_id],
+                            'confidence_history': [confidence],
+                            'area_history': [area]
+                        }
+
+                        matched_track_ids.add(new_id)
+
+                tracks_to_remove = []
+                for track_id, track_data in active_tracks.items():
+                    frames_missing = frame_num - track_data['last_seen']
+
+                    if frames_missing > MAX_FRAMES_MISSING:
+                        if track_data.get('final_class') is None and len(track_data.get('class_history', [])) >= 5:
+                            best_class = get_best_classification(
+                                track_data['class_history'],
+                                track_data['confidence_history'],
+                                track_data.get('area_history', track_data['class_history'])
+                            )
+                            max_conf = max(track_data['confidence_history'])
+                            max_area = track_data.get('max_area', 0)
+
+                            if max_conf >= MIN_CONFIDENCE_FOR_CLASSIFICATION and max_area >= MIN_AREA_FOR_TRACKING:
+                                class_name = 'green' if best_class == 0 else 'red'
+
+                                if track_data.get('final_class') is not None and track_data['final_class'] != best_class:
+                                    old_class_name = 'green' if track_data['final_class'] == 0 else 'red'
+                                    all_unique_ids[old_class_name].discard(track_id)
+                                    print(
+                                        f"[INFO] Correcting track {track_id} from {old_class_name} to {class_name} on removal"
+                                    )
+
+                                all_unique_ids[class_name].add(track_id)
+                                track_data['final_class'] = best_class
+                                track_data['is_locked'] = True
+                                print(
+                                    f"[INFO] Finalizing track {track_id} as {class_name} (frames: {len(track_data['class_history'])}, conf: {max_conf:.2f}, area: {max_area:.0f})"
+                                )
+
+                        tracks_to_remove.append(track_id)
+                    elif frames_missing > 5 and track_data.get('final_class') is None:
+                        if len(track_data.get('class_history', [])) >= 5:
+                            best_class = get_best_classification(
+                                track_data['class_history'],
+                                track_data['confidence_history'],
+                                track_data.get('area_history', track_data['class_history'])
+                            )
+                            max_conf = max(track_data['confidence_history'])
+                            max_area = track_data.get('max_area', 0)
+
+                            if max_conf >= MIN_CONFIDENCE_FOR_CLASSIFICATION and max_area >= MIN_AREA_FOR_TRACKING:
+                                class_name = 'green' if best_class == 0 else 'red'
+
+                                if track_data.get('final_class') is not None and track_data['final_class'] != best_class:
+                                    old_class_name = 'green' if track_data['final_class'] == 0 else 'red'
+                                    all_unique_ids[old_class_name].discard(track_id)
+                                    print(
+                                        f"[INFO] Correcting track {track_id} from {old_class_name} to {class_name} (missing {frames_missing} frames)"
+                                    )
+
+                                all_unique_ids[class_name].add(track_id)
+                                track_data['final_class'] = best_class
+                                track_data['is_locked'] = True
+                                print(
+                                    f"[INFO] Pre-finalizing track {track_id} as {class_name} (missing {frames_missing} frames)"
+                                )
+
+                for track_id in tracks_to_remove:
+                    del active_tracks[track_id]
+
+                annotated_frame = results[0].plot()
+                state = StreamState.OUTPUT
+
+            if state == StreamState.OUTPUT:
+                ret, buffer = cv2.imencode('.jpg', annotated_frame)
+                frame_bytes = buffer.tobytes()
+
+                yield (
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n'
+                )
+                state = StreamState.ACQUIRE_DATA
+
+        except Exception as exc:
+            print(f"[ERROR] State machine failed: {exc}")
+            state = StreamState.ERROR
+
+        if state == StreamState.ERROR:
             cap.release()
             break
-
-        frame_num += 1
-        
-        # Run YOLOv8 inference on the frame
-        results = model(frame)
-
-        # Current frame detections
-        current_detections = []
-        
-        detections = results[0].boxes
-        
-        if detections is not None and len(detections) > 0:
-            for box in detections:
-                class_id = int(box.cls[0])
-                confidence = float(box.conf[0])
-                cx, cy, area = calculate_centroid(box)
-                
-                # Only track detections with sufficient size
-                if area >= MIN_AREA_FOR_TRACKING:
-                    current_detections.append({
-                        'centroid': (cx, cy),
-                        'area': area,
-                        'class': class_id, 
-                        'confidence': confidence
-                    })
-        
-        # Match detections with existing tracks
-        matched_track_ids = set()
-        
-        for detection in current_detections:
-            centroid = detection['centroid']
-            area = detection['area']
-            class_id = detection['class']
-            confidence = detection['confidence']
-            
-            # Try to find matching track
-            track_id = find_matching_track(centroid, class_id, confidence, frame_num, active_tracks)
-            
-            if track_id is not None:
-                # Update existing track
-                track = active_tracks[track_id]
-                track['centroid'] = centroid
-                track['last_seen'] = frame_num
-                track['max_area'] = max(track.get('max_area', 0), area)
-                
-                # Update class history for this track
-                if 'class_history' not in track:
-                    track['class_history'] = []
-                    track['confidence_history'] = []
-                    track['area_history'] = []
-                    track['first_seen'] = frame_num
-                    track['is_locked'] = False
-                
-                track['class_history'].append(class_id)
-                track['confidence_history'].append(confidence)
-                track['area_history'].append(area)
-                
-                # Keep only recent history (last 10 frames)
-                if len(track['class_history']) > 10:
-                    track['class_history'] = track['class_history'][-10:]
-                    track['confidence_history'] = track['confidence_history'][-10:]
-                    track['area_history'] = track['area_history'][-10:]
-                
-                # Determine if we should update the class
-                is_locked = track.get('is_locked', False)
-                old_class = track.get('final_class')
-                frames_tracked = len(track['class_history'])
-                frames_since_first = frame_num - track.get('first_seen', frame_num)
-                
-                # Only update classification if not locked
-                if not is_locked:
-                    # Require minimum observations for reliable classification
-                    required_frames = 5
-                    
-                    if len(track['class_history']) >= required_frames:
-                        # Get best classification from clearest observation
-                        best_class = get_best_classification(
-                            track['class_history'],
-                            track['confidence_history'],
-                            track['area_history']
-                        )
-                        
-                        # Check if best observation meets confidence threshold
-                        max_confidence = max(track['confidence_history'])
-                        
-                        if max_confidence >= MIN_CONFIDENCE_FOR_CLASSIFICATION:
-                            if old_class != best_class:
-                                # Classification changed or being set for first time
-                                if old_class is not None:
-                                    # Only allow reclassification early in tracking
-                                    if frames_since_first <= MAX_RECLASSIFY_FRAME:
-                                        print(f"[INFO] Reclassifying apple {track_id}: {old_class} -> {best_class} (frames: {frames_tracked})") 
-                                        old_class_name = 'green' if old_class == 0 else 'red'
-                                        new_class_name = 'green' if best_class == 0 else 'red'
-                                        
-                                        # Remove from old set and add to new set
-                                        all_unique_ids[old_class_name].discard(track_id)
-                                        all_unique_ids[new_class_name].add(track_id)
-                                        
-                                        track['final_class'] = best_class
-                                        track['class'] = best_class
-                                    # else: too late to reclassify, keep old class
-                                else:
-                                    # First time finalizing
-                                    class_name = 'green' if best_class == 0 else 'red'
-                                    all_unique_ids[class_name].add(track_id)
-                                    track['final_class'] = best_class
-                                    track['class'] = best_class
-                            
-                            # Don't lock immediately - only lock after reclassification window
-                            if frames_since_first > MAX_RECLASSIFY_FRAME:
-                                track['is_locked'] = True
-                
-                matched_track_ids.add(track_id)
-            else:
-                # Create new track
-                new_id = session['next_apple_id']
-                session['next_apple_id'] += 1
-                
-                active_tracks[new_id] = {
-                    'centroid': centroid,
-                    'class': class_id,
-                    'final_class': None,  # Not finalized yet
-                    'is_locked': False,
-                    'first_seen': frame_num,
-                    'last_seen': frame_num,
-                    'max_area': area,
-                    'class_history': [class_id],
-                    'confidence_history': [confidence],
-                    'area_history': [area]
-                }
-                
-                matched_track_ids.add(new_id)
-        
-        # Remove old tracks that haven't been seen recently
-        # But first, finalize any unfinalized tracks that are about to be removed
-        tracks_to_remove = []
-        for track_id, track_data in active_tracks.items():
-            frames_missing = frame_num - track_data['last_seen']
-            
-            if frames_missing > MAX_FRAMES_MISSING:
-                # If track is being removed and not yet finalized, try to finalize it
-                # Only finalize if we have enough evidence
-                if track_data.get('final_class') is None and len(track_data.get('class_history', [])) >= 5:
-                    best_class = get_best_classification(
-                        track_data['class_history'], 
-                        track_data['confidence_history'],
-                        track_data.get('area_history', track_data['class_history'])  # Fallback to class_history length
-                    )
-                    max_conf = max(track_data['confidence_history'])
-                    max_area = track_data.get('max_area', 0)
-                    
-                    # Finalize only if we have good confidence and size
-                    if max_conf >= MIN_CONFIDENCE_FOR_CLASSIFICATION and max_area >= MIN_AREA_FOR_TRACKING:
-                        class_name = 'green' if best_class == 0 else 'red'
-                        
-                        # If already finalized with different class, update the sets
-                        if track_data.get('final_class') is not None and track_data['final_class'] != best_class:
-                            old_class_name = 'green' if track_data['final_class'] == 0 else 'red'
-                            all_unique_ids[old_class_name].discard(track_id)
-                            print(f"[INFO] Correcting track {track_id} from {old_class_name} to {class_name} on removal")
-                        
-                        all_unique_ids[class_name].add(track_id)
-                        track_data['final_class'] = best_class
-                        track_data['is_locked'] = True
-                        print(f"[INFO] Finalizing track {track_id} as {class_name} (frames: {len(track_data['class_history'])}, conf: {max_conf:.2f}, area: {max_area:.0f})")
-                
-                tracks_to_remove.append(track_id)
-            elif frames_missing > 5 and track_data.get('final_class') is None:
-                # Track hasn't been seen in a while but not dead yet - try to finalize if possible
-                if len(track_data.get('class_history', [])) >= 5:
-                    best_class = get_best_classification(
-                        track_data['class_history'], 
-                        track_data['confidence_history'],
-                        track_data.get('area_history', track_data['class_history'])
-                    )
-                    max_conf = max(track_data['confidence_history'])
-                    max_area = track_data.get('max_area', 0)
-                    
-                    if max_conf >= MIN_CONFIDENCE_FOR_CLASSIFICATION and max_area >= MIN_AREA_FOR_TRACKING:
-                        class_name = 'green' if best_class == 0 else 'red'
-                        
-                        # If already finalized with different class, update the sets
-                        if track_data.get('final_class') is not None and track_data['final_class'] != best_class:
-                            old_class_name = 'green' if track_data['final_class'] == 0 else 'red'
-                            all_unique_ids[old_class_name].discard(track_id)
-                            print(f"[INFO] Correcting track {track_id} from {old_class_name} to {class_name} (missing {frames_missing} frames)")
-                        
-                        all_unique_ids[class_name].add(track_id)
-                        track_data['final_class'] = best_class
-                        track_data['is_locked'] = True
-                        print(f"[INFO] Pre-finalizing track {track_id} as {class_name} (missing {frames_missing} frames)")
-        
-        for track_id in tracks_to_remove:
-            del active_tracks[track_id]
-
-        # Visualize the results on the frame
-        annotated_frame = results[0].plot()
-        # ---------------------------------
-
-        # Codificăm imaginea ca JPEG pentru a o trimite în browser
-        ret, buffer = cv2.imencode('.jpg', annotated_frame)
-        frame_bytes = buffer.tobytes()
-
-        # Generatorul care trimite fluxul video (MJPEG)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
 @app.route('/')
 def index():

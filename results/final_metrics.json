@@ -1,9 +1,9 @@
 {
   "model_info": {
     "model_name": "YOLOv8n - AppleScan Final",
-    "model_path": "models/mar_model/weights/best.pt",
-    "training_date": "2025-12-12",
-    "evaluation_date": "2026-01-16",
+    "model_path": "models/mar_model_nou/weights/best.pt",
+    "training_date": "2026-02-09",
+    "evaluation_date": "2026-02-09",
     "total_parameters": 3157200,
     "model_size_mb": 6.2
   },
@@ -15,23 +15,21 @@
     "f1_score_mean": 0.996709161495216,
     "false_negative_rate": 0.0,
     "false_positive_rate": 0.0066,
-    "inference_latency_ms": 37,
-    "test_set_size": 50
+    "inference_latency_ms": 49.71339999974589,
+    "test_set_size": 3
   },
   "per_class_metrics": {
     "apple_green": {
-      "precision": 0.998,
+      "precision": 0.9929890082132925,
       "recall": 1.0,
-      "f1_score": 0.999,
-      "support": 25,
-      "notes": "Best performing class - high contrast with conveyor belt"
+      "f1_score": 0.996482172376358,
+      "support": 8
     },
     "apple_red": {
-      "precision": 0.989,
+      "precision": 0.9938908141533169,
       "recall": 1.0,
-      "f1_score": 0.994,
-      "support": 25,
-      "notes": "Excellent performance - slight confusion with LED reflections (resolved in app)"
+      "f1_score": 0.9969360479504104,
+      "support": 10
     }
   },
   "application_metrics": {

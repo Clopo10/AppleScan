@@ -19,7 +19,7 @@ def evaluate_model():
     """
     # Căi către model și configurare date
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    model_path = os.path.join(base_dir, 'models', 'mar_model', 'weights', 'best.pt')
+    model_path = os.path.join(base_dir, 'models', 'mar_model_nou', 'weights', 'best.pt')
     data_yaml = os.path.join(base_dir, 'data', 'generated', 'AppleScan.yolov8', 'data.yaml')
     results_dir = os.path.join(base_dir, 'results')
     

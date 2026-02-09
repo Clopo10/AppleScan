@@ -2,13 +2,13 @@
 
 ### 2.1 Sursa datelor
 
-- **Origine:** Date proprii (înregistrări video cu banda transportoare simulată) + Dataset public
-- **Modul de achiziție:** Fișier extern (Video .mp4 convertit în cadre)
-- **Perioada / condițiile colectării:** Noiembrie 2024 - Ianuarie 2025, condiții de iluminare artificială (interior), fundal neutru (bandă transportoare).
+- **Origine:** Date proprii (înregistrări video cu banda transportoare simulată)
+- **Modul de achiziție:** Inregistrare video (Video .mp4 convertit în cadre)
+- **Perioada / condițiile colectării:** Noiembrie 2024, condiții de iluminare artificială (interior), fundal neutru.
 
 ### 2.2 Caracteristicile dataset-ului
 
-- **Număr total de observații:** ~1,500 imagini (extrase din video + surse externe).
+- **Număr total de observații:** 33 imagini (extrase din video).
 - **Număr de caracteristici (features):** Rezoluție pixeli (W x H x 3) + 5 atribute per etichetă (YOLO format).
 - **Tipuri de date:** Imagini (RGB) + Text (Adnotări)
 - **Format fișiere:** JPG/PNG (Imagini) / TXT (Etichete YOLO)

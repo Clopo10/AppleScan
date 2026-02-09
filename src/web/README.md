@@ -102,19 +102,6 @@ cap = cv2.VideoCapture('data/video/mere3.mp4')
 cap = cv2.VideoCapture('rtsp://192.168.1.100:554/stream')
 ```
 
-### Ajustare Threshold Confidence
-
-**Editați în `app.py`**:
-
-```python
-# După linia 33
-results = model(frame, conf=0.5)  # Adăugați conf=X (0.0-1.0)
-
-# conf=0.25 (default): Mai multe detecții (unele false positives)
-# conf=0.50: Echilibrat (recomandat)
-# conf=0.75: Doar detecții foarte sigure (poate rata mere parțial vizibile)
-```
-
 ### Rezoluție Video
 
 **Editați în `app.py` înainte de loop-ul `while True`**:
@@ -157,59 +144,6 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 ### Template HTML
 
 **Fișier**: `templates/index.html`
-
-**Conținut Minimal**:
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>AppleScan - Detecție Mere</title>
-  </head>
-  <body>
-    <h1>AppleScan - Sortare Automată Mere</h1>
-    <img src="{{ url_for('video_feed') }}" width="100%" />
-    <p>Legenda: Verde = Măr Bun | Roșu = Măr Defect</p>
-  </body>
-</html>
-```
-
-## Performanță
-
-### Latență Măsurată
-
-| **Hardware**           | **Procesare/Frame** | **FPS Stream** |
-| ---------------------- | ------------------- | -------------- |
-| CPU i7-7700HQ          | ~66ms               | 10-15 FPS      |
-| GPU RTX 3060 (simulat) | ~16ms               | 30-60 FPS      |
-
-**Bottleneck**: Inferență YOLOv8, nu streaming-ul HTTP.
-
-### Optimizări Posibile
-
-1. **Rezoluție mai mică**:
-
-   ```python
-   results = model(frame, imgsz=320)  # Default 640
-   # Viteză: +100%, Acuratețe: -5%
-   ```
-
-2. **Skip Frames**:
-
-   ```python
-   frame_count = 0
-   while True:
-       frame_count += 1
-       if frame_count % 2 == 0:  # Procesează doar frame-uri pare
-           results = model(frame)
-   # Viteză: +100%, Smoothness: -50%
-   ```
-
-3. **Half Precision (GPU)**:
-   ```python
-   model = YOLO('best.pt', half=True)  # FP16 vs FP32
-   # Viteză: +50%, Memorie GPU: -50%
-   ```
 
 ## Troubleshooting
 
@@ -266,54 +200,5 @@ New-NetFirewallRule -DisplayName "Flask 5000" -Direction Inbound -LocalPort 5000
 
 **Locație**: `docs/screenshots/inference_real.png`
 
-**Cum să faceți screenshot**:
-
-1. Rulați `python src\web\app.py`
-2. Deschideți http://localhost:5000 în browser
-3. Așteptați să apară video cu detecții
-4. Windows: `Win + Shift + S` (Snipping Tool)
-5. Salvați ca `docs\screenshots\inference_real.png`
-
-## Dezvoltare Viitoare
-
-### Features Posibile
-
-- [ ] **Contorizare**: Afișare număr mere procesate (bune vs defecte)
-- [ ] **Statistici**: Grafic live cu ratele de detecție
-- [ ] **Control Bandă**: Buton Start/Stop pentru simulare control bandă
-- [ ] **Upload Video**: Permite user să încarce propriul video
-- [ ] **Multiple Camere**: Grid cu 4 stream-uri simultane
-- [ ] **Export CSV**: Download raport cu toate detecțiile
-
-### Deployment Producție
-
-**Pentru mediu industrial**:
-
-1. **Folosiți Gunicorn** (nu Flask development server):
-
-   ```bash
-   pip install gunicorn
-   gunicorn -w 4 -b 0.0.0.0:5000 src.web.app:app
-   ```
-
-2. **Reverse Proxy cu Nginx**:
-
-   ```nginx
-   server {
-       listen 80;
-       location / {
-           proxy_pass http://localhost:5000;
-       }
-   }
-   ```
-
-3. **HTTPS cu SSL**:
-   ```bash
-   certbot --nginx -d applescan.example.com
-   ```
-
-## Contact
-
-**UI implementat de**: Clopotaru Alexandru  
 **Framework**: Flask 3.0  
 **Streaming Protocol**: MJPEG (Motion JPEG over HTTP)
