@@ -2,9 +2,9 @@ import cv2
 import os
 
 # --- CONFIGURARE ---
-VIDEO_PATH = 'data/video/mere3.mp4'  # Asigură-te că numele e corect
+VIDEO_PATH = 'data/video/mere3.mp4'       
 OUTPUT_FOLDER = 'data/raw_images'         # Unde salvăm pozele
-FRAME_RATE = 10                           # Salvăm 1 cadru la fiecare 10 cadre (pentru diversitate)
+FRAME_RATE = 10                           # Salvăm 1 cadru la fiecare 10 cadre 
 # -------------------
 
 def extract_frames():

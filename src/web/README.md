@@ -31,7 +31,7 @@ pip install flask opencv-python ultralytics
 ### 2. Pornire Server
 
 ```powershell
-# Din folderul rădăcină AppleScan/
+# Din folderul root AppleScan/
 python src\web\app.py
 ```
 

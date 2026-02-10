@@ -508,7 +508,8 @@ _[Minimum 3 surse cu DOI/link funcțional - format: Autor, Titlu, Anul, Link]_
 
 1. Jocher, G. et al., 2023. Ultralytics YOLOv8. https://github.com/ultralytics/ultralytics
 2. Ultralytics Documentation, 2025. YOLOv8 Docs. https://docs.ultralytics.com
-3. PyTorch Documentation, 2025. https://pytorch.org/docs/stable/
+3. Flask Documentation, 2025. https://flask.palletsprojects.com/
+4. Roboflow Documentation, 2025. https://docs.roboflow.com/
 
 **Exemple format:**
 
@@ -544,7 +545,7 @@ _[Minimum 3 surse cu DOI/link funcțional - format: Autor, Titlu, Anul, Link]_
 ### Acces și Versionare
 
 - [x] **Repository accesibil** cadrelor didactice RN (public sau privat cu acces)
-- [ ] **Tag `v0.6-optimized-final`** creat și pushed
+- [x] **Tag `v0.6-optimized-final`** creat și pushed
 - [x] **Commit-uri incrementale** vizibile în `git log` (nu 1 commit gigantic)
 - [x] **Fișiere mari** (>100MB) excluse sau în `.gitignore`
 

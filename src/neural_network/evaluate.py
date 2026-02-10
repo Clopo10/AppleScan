@@ -2,8 +2,6 @@
 Script pentru evaluarea modelului YOLOv8 antrenat pe setul de test.
 Calculează și salvează metricile: mAP, Precision, Recall, F1-score.
 
-Autor: Clopotaru Alexandru
-Data: 12.12.2025
 """
 
 from ultralytics import YOLO
@@ -54,8 +52,8 @@ def evaluate_model():
         'test_metrics': {
             'mAP50': float(metrics.box.map50),           # mAP la IoU=0.5
             'mAP50-95': float(metrics.box.map),          # mAP la IoU=0.5:0.95
-            'precision': precision,                       # Precizie medie
-            'recall': recall,                             # Recall mediu
+            'precision': precision,                      # Precizie medie
+            'recall': recall,                            # Recall mediu
             'f1_score': f1_score,                        # F1-score calculat
         },
         'model_info': {
@@ -87,7 +85,7 @@ def evaluate_model():
     print("="*60)
     
     # Verificare cerințe minimale Etapa 5
-    print("\n📋 VERIFICARE CERINȚE ETAPA 5 (Nivel 1):")
+    print("\n📋 VERIFICARE CERINȚE ETAPA 5:")
     
     # Pentru detecție obiect, considerăm mAP50 ca "acuratețe"
     accuracy = results['test_metrics']['mAP50']

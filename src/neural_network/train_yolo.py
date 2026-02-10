@@ -3,11 +3,9 @@ import os
 
 def train_model():
     # 1. Obținem calea către folderul principal al proiectului (AppleScan)
-    # Mergem 2 niveluri mai sus de la acest script (src -> AppleScan)
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # 2. Definim calea EXACTA către data.yaml
-    # ATENȚIE: Aici am adăugat folderul 'AppleScan.yolov8' conform pozei tale
     yaml_path = os.path.join(base_dir, 'data', 'generated', 'AppleScan.yolov8', 'data.yaml')
 
     # Verificare de siguranță: vedem dacă fișierul există înainte să pornim
@@ -17,7 +15,7 @@ def train_model():
 
     print(f"[INFO] Fisier de configurare gasit: {yaml_path}")
 
-    # 3. Încărcăm modelul Nano (cel mai rapid pentru teste)
+    # 3. Încărcăm modelul Nano 
     model = YOLO('yolov8n.pt') 
 
     print("[INFO] Incep antrenarea... (Poate dura cateva minute)")
@@ -25,12 +23,12 @@ def train_model():
     # 4. Start Antrenare
     results = model.train(
         data=yaml_path, 
-        epochs=100,        # 100 de epoci
-        imgsz=640,         # Mărimea standard
-        plots=True,        # Generează grafice
-        name='mar_model_nou',  # Numele folderului unde se salvează rezultatul
-        project='models',   # Salvăm modelele antrenate organizat în folderul models/
-        pretrained=False
+        epochs=100,                  # 100 de epoci
+        imgsz=640,                   # Mărimea standard
+        plots=True,                  # Generează grafice
+        name='mar_model_nou',        # Numele folderului unde se salvează rezultatul
+        project='models',            # Salvăm modelele antrenate organizat în folderul models/
+        pretrained=False             # Antranăm de la zero, fără să folosim greutăți pre-antrenate
     )
 
     print("[GATA] Antrenare completa!")
